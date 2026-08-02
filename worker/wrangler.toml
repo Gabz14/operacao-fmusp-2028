@@ -1,0 +1,9 @@
+name = "operacao-fmusp-api"
+main = "src/index.ts"
+compatibility_date = "2026-07-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "operacao-fmusp"
+database_id = "REPLACE_WITH_DB_ID"
+migrations_dir = "migrations"

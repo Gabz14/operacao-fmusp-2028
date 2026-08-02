@@ -1,0 +1,17 @@
+{
+  "name": "operacao-fmusp-api",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "migrate:local": "wrangler d1 migrations apply operacao-fmusp --local",
+    "migrate:remote": "wrangler d1 migrations apply operacao-fmusp --remote"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260801.1",
+    "typescript": "^5.5.4",
+    "wrangler": "^4.118.0"
+  }
+}
