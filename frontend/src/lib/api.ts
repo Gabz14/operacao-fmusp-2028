@@ -1,6 +1,15 @@
 const BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? ''
 const usingDemo = !import.meta.env.VITE_API_URL
 
+let demoMode = false
+export const isDemo = () => demoMode
+
+function notifyDemo() {
+  if (demoMode) return
+  demoMode = true
+  try { window.dispatchEvent(new CustomEvent('op:demo', { detail: true })) } catch { /* noop */ }
+}
+
 async function req<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(BASE + path, {
     headers: { 'Content-Type': 'application/json' },
@@ -18,6 +27,7 @@ async function req<T>(path: string, options?: RequestInit): Promise<T> {
       const { DEMO_API } = await import('./demo')
       const demo = DEMO_API[path]
       if (demo === undefined) throw new Error('Falha ao ler resposta do servidor')
+      notifyDemo()
       return demo as T
     } catch {
       throw new Error('Falha ao ler resposta do servidor')

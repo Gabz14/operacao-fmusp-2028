@@ -18,8 +18,16 @@ export default function Home() {
 
   const completeItem = async () => {
     if (!continue_study) return
-    const r = await api.post<{ xp: number }>(`/api/cronograma/items/${continue_study.id}/complete`)
-    toast({ title: 'Tarefa concluída', body: `+${r.xp} XP — ${continue_study.title}`, kind: 'xp' })
+    try {
+      const r = await api.post<{ xp: number }>(`/api/cronograma/items/${continue_study.id}/complete`)
+      toast({ title: 'Tarefa concluída', body: `+${r.xp} XP — ${continue_study.title}`, kind: 'xp' })
+    } catch {
+      toast({
+        title: 'Modo demonstração',
+        body: 'Concluir tarefas ficará ativo quando a API estiver conectada.',
+        kind: 'info',
+      })
+    }
     refresh()
   }
 

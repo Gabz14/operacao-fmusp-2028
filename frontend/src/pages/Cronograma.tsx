@@ -50,8 +50,12 @@ export default function Cronograma() {
   useEffect(() => { load() }, [])
 
   const complete = async (id: number) => {
-    const r = await api.post<{ xp: number }>(`/api/cronograma/items/${id}/complete`)
-    toast({ title: '+ ' + r.xp + ' XP', body: 'Tarefa concluída. A cidade está mais dourada.', kind: 'xp' })
+    try {
+      const r = await api.post<{ xp: number }>(`/api/cronograma/items/${id}/complete`)
+      toast({ title: '+ ' + r.xp + ' XP', body: 'Tarefa concluída. A cidade está mais dourada.', kind: 'xp' })
+    } catch {
+      toast({ title: 'Modo demonstração', body: 'Concluir tarefas ficará ativo quando a API estiver conectada.', kind: 'info' })
+    }
     load()
     refresh()
   }

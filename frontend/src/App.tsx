@@ -1,9 +1,9 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Home, CalendarDays, Timer, Layers, User } from 'lucide-react'
 import { motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useApp } from './store'
-import { api } from './lib/api'
+import { api, isDemo } from './lib/api'
 import { Toasts } from './components/ui'
 import CrisisOverlay from './pages/Crise'
 
@@ -18,7 +18,24 @@ const TABS = [
 export default function App() {
   const dash = useApp((s) => s.dash)
   const refresh = useApp((s) => s.refresh)
+  const toast = useApp((s) => s.toast)
   const navigate = useNavigate()
+  const [demo, setDemo] = useState(false)
+
+  useEffect(() => {
+    const onDemo = (e: Event) => setDemo((e as CustomEvent<boolean>).detail)
+    window.addEventListener('op:demo', onDemo)
+    return () => window.removeEventListener('op:demo', onDemo)
+  }, [])
+
+  useEffect(() => {
+    const onRejection = (e: PromiseRejectionEvent) => {
+      e.preventDefault()
+      if (isDemo()) toast({ title: 'Modo demonstração', body: 'Esta ação não está disponível sem a API conectada.', kind: 'info' })
+    }
+    window.addEventListener('unhandledrejection', onRejection)
+    return () => window.removeEventListener('unhandledrejection', onRejection)
+  }, [toast])
 
   useEffect(() => {
     const applyThemes = (owned: string[]) => {
@@ -65,6 +82,23 @@ export default function App() {
   return (
     <div className="min-h-full relative">
       <div className="fixed inset-0 pointer-events-none bg-grid" />
+
+      {demo && (
+        <button
+          onClick={() =>
+            toast({
+              title: 'Modo demonstração',
+              body: 'Você está vendo dados de exemplo. Para salvar e interagir de verdade, a API precisa ser hospedada.',
+              kind: 'info',
+            })
+          }
+          className="fixed top-3 left-1/2 -translate-x-1/2 z-[60] flex items-center gap-1.5 rounded-full border border-gold/30 bg-black/60 backdrop-blur px-3 py-1 text-[10px] uppercase tracking-widest text-gold pointer-events-auto"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-gold animate-pulse" />
+          modo demonstração
+        </button>
+      )}
+
       <main className="relative mx-auto max-w-lg px-4 pb-28 pt-4">
         <Outlet />
       </main>

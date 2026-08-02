@@ -126,8 +126,12 @@ export default function Foco() {
   const finishPhase = async () => {
     setRunning(false)
     if (phase === 'focus') {
-      await api.post('/api/pomodoros', { minutes: active.focus, mode: active.label })
-      toast({ title: 'Pomodoro completo', body: `+${Math.max(1, Math.round(active.focus / 25)) * 10} XP — foco de ${active.focus} min registrado.`, kind: 'gold' })
+      try {
+        await api.post('/api/pomodoros', { minutes: active.focus, mode: active.label })
+        toast({ title: 'Pomodoro completo', body: `+${Math.max(1, Math.round(active.focus / 25)) * 10} XP — foco de ${active.focus} min registrado.`, kind: 'gold' })
+      } catch {
+        toast({ title: 'Modo demonstração', body: 'O pomodoro será registrado quando a API estiver conectada.', kind: 'info' })
+      }
       refresh()
       setToday((t) => t + 1)
       setPhase('rest')

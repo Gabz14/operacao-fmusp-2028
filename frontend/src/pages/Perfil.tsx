@@ -65,14 +65,18 @@ export default function Perfil() {
       try { if (Notification.permission === 'default') await Notification.requestPermission() } catch { /* noop */ }
     }
     localStorage.setItem('notify_enabled', notifications ? '1' : '0')
-    await api.put('/api/user', {
-      name: fd.get('name'), avatar: fd.get('avatar'),
-      objective: fd.get('objective'), university: fd.get('university'),
-      course: fd.get('course'),
-      notifications_enabled: notifications,
-    })
-    setEditing(false)
-    toast({ title: 'Perfil atualizado', kind: 'gold' })
+    try {
+      await api.put('/api/user', {
+        name: fd.get('name'), avatar: fd.get('avatar'),
+        objective: fd.get('objective'), university: fd.get('university'),
+        course: fd.get('course'),
+        notifications_enabled: notifications,
+      })
+      setEditing(false)
+      toast({ title: 'Perfil atualizado', kind: 'gold' })
+    } catch {
+      toast({ title: 'Modo demonstração', body: 'Salvar perfil ficará ativo quando a API estiver conectada.', kind: 'info' })
+    }
     load()
     refresh()
   }
