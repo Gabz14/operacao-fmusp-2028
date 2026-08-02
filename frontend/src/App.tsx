@@ -3,6 +3,7 @@ import { Home, CalendarDays, Timer, Layers, User } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useEffect } from 'react'
 import { useApp } from './store'
+import { api } from './lib/api'
 import { Toasts } from './components/ui'
 import CrisisOverlay from './pages/Crise'
 
@@ -20,17 +21,39 @@ export default function App() {
   const navigate = useNavigate()
 
   useEffect(() => {
-    const owned = new Set<string>(JSON.parse(localStorage.getItem('loja_owned') ?? '[]'))
-    const el = document.documentElement
-    el.classList.toggle('theme-noite', owned.has('tema_noite'))
-    el.classList.toggle('theme-ouro', owned.has('tema_ouro'))
-    el.classList.toggle('theme-cidade', owned.has('wallpaper_cidade'))
-    el.classList.toggle('theme-portao', owned.has('wallpaper_noite'))
+    const applyThemes = (owned: string[]) => {
+      const set = new Set(owned)
+      const el = document.documentElement
+      el.classList.toggle('theme-noite', set.has('tema_noite'))
+      el.classList.toggle('theme-ouro', set.has('tema_ouro'))
+      el.classList.toggle('theme-cidade', set.has('wallpaper_cidade'))
+      el.classList.toggle('theme-portao', set.has('wallpaper_noite'))
+    }
+    const cached = localStorage.getItem('loja_owned')
+    if (cached) applyThemes(JSON.parse(cached))
+    api.get<{ user: { owned_items: string[]; notifications_enabled: boolean } }>('/api/perfil')
+      .then((p) => {
+        applyThemes(p.user.owned_items ?? [])
+        localStorage.setItem('loja_owned', JSON.stringify(p.user.owned_items ?? []))
+        localStorage.setItem('notify_enabled', p.user.notifications_enabled ? '1' : '0')
+      })
+      .catch(() => { /* offline — usa o cache local */ })
   }, [])
 
   useEffect(() => {
     const onFocus = () => refresh(true)
-    const onVis = () => { if (document.visibilityState === 'visible') refresh(true) }
+    const onVis = () => {
+      if (document.visibilityState !== 'visible') return
+      refresh(true)
+      if (document.hasFocus()) return
+      const dash = useApp.getState().dash
+      if (dash) {
+        const pending = dash.summary.revisions_due + dash.summary.flashcards_due
+        if (pending > 0 && localStorage.getItem('notify_enabled') === '1') {
+          notify('Operação FMUSP', `${pending} pendências esperando: revisões e flashcards.`)
+        }
+      }
+    }
     window.addEventListener('focus', onFocus)
     document.addEventListener('visibilitychange', onVis)
     return () => {
@@ -94,4 +117,10 @@ export default function App() {
 
 function Sparkle() {
   return <span className="text-lg leading-none">✦</span>
+}
+
+function notify(title: string, body: string) {
+  try {
+    if (Notification.permission === 'granted') new Notification(title, { body, icon: '/icons/icon-192.png' })
+  } catch { /* noop */ }
 }

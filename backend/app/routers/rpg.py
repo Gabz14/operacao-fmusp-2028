@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+import json
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from ..db import get_db
@@ -40,6 +41,7 @@ def perfil(db: Session = Depends(get_db)):
             "theme": user.theme,
             "notifications_enabled": user.notifications_enabled,
             "crisis": user.crisis,
+            "owned_items": json.loads(user.owned_items or "[]"),
         },
         "achievements": [
             {"id": a.id, "slug": a.slug, "title": a.title, "description": a.description,

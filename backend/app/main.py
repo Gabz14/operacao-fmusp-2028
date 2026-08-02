@@ -11,7 +11,7 @@ from . import db as dbmod
 from .seed import init_db
 from .routers import (
     dashboard, user, cronograma, flashcards, estudo,
-    estatisticas, biblioteca, redacao, provas, rpg, crise, config, ia, backup,
+    estatisticas, biblioteca, redacao, provas, rpg, crise, config, ia, backup, loja,
 )
 
 FRONTEND_DIST = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
@@ -74,7 +74,7 @@ app.add_middleware(
 )
 
 for r in (dashboard, user, cronograma, flashcards, estudo, estatisticas,
-          biblioteca, redacao, provas, rpg, crise, config, ia, backup):
+          biblioteca, redacao, provas, rpg, crise, config, ia, backup, loja):
     app.include_router(r.router)
 
 

@@ -53,6 +53,7 @@ class User(Base):
 
     notifications_enabled: Mapped[bool] = mapped_column(Boolean, default=True)
     settings_json: Mapped[str] = mapped_column(Text, default="{}")
+    owned_items: Mapped[str] = mapped_column(Text, default="[]")
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

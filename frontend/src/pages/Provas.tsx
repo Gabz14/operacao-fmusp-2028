@@ -21,6 +21,8 @@ export default function Provas() {
   const [subjects, setSubjects] = useState<{ subject_id: number; name: string }[]>([])
   const [aiForm, setAiForm] = useState(false)
   const [aiBusy, setAiBusy] = useState(false)
+  const [plan, setPlan] = useState<string | null>(null)
+  const [planBusy, setPlanBusy] = useState(false)
   const toast = useApp((s) => s.toast)
   const refresh = useApp((s) => s.refresh)
 
@@ -57,8 +59,18 @@ export default function Provas() {
     setResult({ ...r, id: 0, exam_id: solving.id, date: new Date().toISOString().slice(0, 10), seconds: secs, wrong_topics: r.wrong })
     toast({ title: `Simulado corrigido: ${r.percent}%`, body: `+${r.xp} XP · ${r.total - r.score} erradas viram revisão.`, kind: 'gold' })
     setSolving(null)
+    setPlan(null)
     load()
     refresh()
+  }
+
+  const makePlan = async () => {
+    if (!result) return
+    setPlanBusy(true)
+    const r = await api.post<{ ok: boolean; text?: string; message?: string }>('/api/ia/plano-revisao', { wrong_topics: result.wrong_topics })
+    setPlanBusy(false)
+    if (r.ok) setPlan(r.text ?? '')
+    else toast({ title: 'IA indisponível', body: r.message ?? 'Falha', kind: 'alert' })
   }
 
   const genAI = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -150,16 +162,30 @@ export default function Provas() {
           {result.wrong_topics.length > 0 && (
             <div>
               <div className="text-xs font-bold text-gold-soft mb-1.5">Assuntos errados → próximas revisões</div>
-              <div className="flex flex-wrap gap-1.5">
-                {result.wrong_topics.map((w, i) => (
-                  <span key={i} className="text-[11px] bg-red-500/12 border border-red-500/30 text-red-300 rounded-full px-2.5 py-1">
-                    {w.subject}: {w.topic || '—'}
-                  </span>
-                ))}
-              </div>
+          <div className="flex flex-wrap gap-1.5">
+            {result.wrong_topics.map((w, i) => (
+              <span key={i} className="text-[11px] bg-red-500/12 border border-red-500/30 text-red-300 rounded-full px-2.5 py-1">
+                {w.subject}: {w.topic || '—'}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {result.wrong_topics.length > 0 && (
+        <>
+          <button onClick={makePlan} disabled={planBusy}
+            className="w-full rounded-xl bg-gold/15 border border-gold/40 text-gold font-bold py-2.5 text-sm disabled:opacity-50 flex items-center justify-center gap-2">
+            <Sparkles className="w-4 h-4" /> {planBusy ? 'montando plano…' : plan ? 'regerar plano de ataque' : 'gerar plano de ataque (IA)'}
+          </button>
+          {plan && (
+            <div className="rounded-xl bg-black/25 border border-gold/25 p-3.5">
+              <div className="text-xs font-bold text-gold-soft mb-1.5">Plano de revisão da IA</div>
+              <p className="text-[13px] leading-relaxed whitespace-pre-wrap text-white/90">{plan}</p>
             </div>
           )}
-          <button onClick={() => setResult(null)} className="text-xs text-gold">fechar</button>
+        </>
+      )}
+      <button onClick={() => setResult(null)} className="text-xs text-gold">fechar</button>
         </Glass>
       )}
 

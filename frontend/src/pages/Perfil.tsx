@@ -60,11 +60,16 @@ export default function Perfil() {
   const save = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
+    const notifications = fd.get('notifications') === 'on'
+    if (notifications) {
+      try { if (Notification.permission === 'default') await Notification.requestPermission() } catch { /* noop */ }
+    }
+    localStorage.setItem('notify_enabled', notifications ? '1' : '0')
     await api.put('/api/user', {
       name: fd.get('name'), avatar: fd.get('avatar'),
       objective: fd.get('objective'), university: fd.get('university'),
       course: fd.get('course'),
-      notifications_enabled: fd.get('notifications') === 'on',
+      notifications_enabled: notifications,
     })
     setEditing(false)
     toast({ title: 'Perfil atualizado', kind: 'gold' })

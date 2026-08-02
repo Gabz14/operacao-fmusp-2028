@@ -11,6 +11,7 @@ from .services.scheduler import generate_all, generate_week
 
 def init_db() -> None:
     dbmod.Base.metadata.create_all(dbmod.engine)
+    dbmod.migrate()
     db = dbmod.SessionLocal()
     try:
         seed(db)
