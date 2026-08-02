@@ -5,5 +5,5 @@ compatibility_date = "2026-07-01"
 [[d1_databases]]
 binding = "DB"
 database_name = "operacao-fmusp"
-database_id = "REPLACE_WITH_DB_ID"
+database_id = "ca066907-4f35-4f40-9e22-e062ca6d5b70"
 migrations_dir = "migrations"
