@@ -46,3 +46,12 @@ def create_redacao(data: RedacaoIn, db: Session = Depends(get_db)):
     xp_svc.unlock_achievement(db, user, "primeira_redacao")
     db.commit()
     return {"id": r.id, "xp": xp_svc.XP_REDACAO}
+
+
+@router.delete("/redacoes/{redacao_id}")
+def delete_redacao(redacao_id: int, db: Session = Depends(get_db)):
+    r = db.query(Redacao).get(redacao_id)
+    if r:
+        db.delete(r)
+        db.commit()
+    return {"ok": True}

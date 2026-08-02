@@ -1,122 +1,75 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { Home, CalendarDays, Timer, Layers, User } from 'lucide-react'
+import { motion } from 'framer-motion'
+import { useApp } from './store'
+import { Toasts } from './components/ui'
+import CrisisOverlay from './pages/Crise'
 
-function App() {
-  const [count, setCount] = useState(0)
+const TABS = [
+  { to: '/', icon: Home, label: 'Início' },
+  { to: '/cronograma', icon: CalendarDays, label: 'Cronograma' },
+  { to: '/foco', icon: Timer, label: 'Foco' },
+  { to: '/flashcards', icon: Layers, label: 'Flashcards' },
+  { to: '/perfil', icon: User, label: 'Perfil' },
+]
+
+export default function App() {
+  const dash = useApp((s) => s.dash)
+  const navigate = useNavigate()
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <div className="min-h-full relative">
+      <div className="fixed inset-0 pointer-events-none bg-grid" />
+      <main className="relative mx-auto max-w-lg px-4 pb-28 pt-4">
+        <Outlet />
+      </main>
 
-      <div className="ticks"></div>
+      {dash?.crisis.active && <CrisisOverlay />}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+      <nav className="fixed bottom-0 left-0 right-0 z-50">
+        <div className="mx-auto max-w-lg px-3 pb-3">
+          <div className="glass-strong rounded-2xl px-2 py-1.5 flex items-stretch justify-between gap-1">
+            {TABS.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                className={({ isActive }) =>
+                  `relative flex flex-col items-center gap-0.5 rounded-xl px-2 py-1.5 min-w-[56px] transition-colors ${
+                    isActive ? 'text-gold' : 'text-mist hover:text-white'
+                  }`
+                }
+              >
+                {({ isActive }) => (
+                  <>
+                    {isActive && (
+                      <motion.div
+                        layoutId="tab-glow"
+                        className="absolute inset-0 rounded-xl bg-gold/10 border border-gold/25"
+                        transition={{ type: 'spring', stiffness: 400, damping: 32 }}
+                      />
+                    )}
+                    <Icon className="w-5 h-5 relative" />
+                    <span className="text-[10px] font-medium relative">{label}</span>
+                  </>
+                )}
+              </NavLink>
+            ))}
+          </div>
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      </nav>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+      <Toasts />
+      <button
+        onClick={() => navigate('/ia')}
+        className="fixed right-4 bottom-24 z-50 w-13 h-13 p-3.5 rounded-full bg-gradient-to-br from-gold-soft to-gold text-black font-bold shadow-lg gold-glow pulse-gold"
+        title="Assistente IA"
+      >
+        <Sparkle />
+      </button>
+    </div>
   )
 }
 
-export default App
+function Sparkle() {
+  return <span className="text-lg leading-none">✦</span>
+}

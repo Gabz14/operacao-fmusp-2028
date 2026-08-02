@@ -19,6 +19,7 @@ def dashboard(db: Session = Depends(get_db)):
     scheduler.replan(db)
     xp_svc.ensure_missions(db)
     crisis_active = scheduler.check_crisis(db)
+    xp_svc.unlock_cards_for_phase(db, scheduler.phase_for_date(date.today())["num"])
     db.refresh(user)
 
     today = date.today()

@@ -22,6 +22,18 @@ def quote_of(db: Session, occasion: str) -> str:
     return pool[day_seed % len(pool)]
 
 
+def unlock_cards_for_phase(db: Session, phase_num: int) -> int:
+    """Desbloqueia cartas colecionáveis da fase atual (e anteriores)."""
+    from ..models import Card
+    unlocked = 0
+    for card in db.query(Card).filter(Card.phase_unlock <= phase_num, Card.unlocked_at.is_(None)).all():
+        card.unlocked_at = datetime.now()
+        unlocked += 1
+    if unlocked:
+        db.commit()
+    return unlocked
+
+
 def update_rank(db: Session, user: User) -> dict | None:
     slug, name, _ = curriculum.rank_for_xp(user.xp)
     promoted = None
