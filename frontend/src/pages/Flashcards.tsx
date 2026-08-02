@@ -16,6 +16,8 @@ export default function Flashcards() {
   const [reviewing, setReviewing] = useState(false)
   const [subjectFilter, setSubjectFilter] = useState<number | null>(null)
   const [adding, setAdding] = useState(false)
+  const [aiForm, setAiForm] = useState(false)
+  const [aiBusy, setAiBusy] = useState(false)
   const toast = useApp((s) => s.toast)
   const refresh = useApp((s) => s.refresh)
 
@@ -57,6 +59,25 @@ export default function Flashcards() {
     setIdx(0)
     setShow(false)
     setReviewing(true)
+  }
+
+  const genAI = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    setAiBusy(true)
+    const r = await api.post<{ ok: boolean; created?: number; message?: string }>('/api/ia/flashcards', {
+      subject_id: Number(fd.get('subject_id')),
+      topic: String(fd.get('topic') ?? '').trim(),
+      qty: Number(fd.get('qty') ?? 8),
+    })
+    setAiBusy(false)
+    if (r.ok) {
+      toast({ title: `+${r.created} flashcards gerados`, body: 'A IA montou seu baralho. Revisão vem por repetição espaçada.', kind: 'gold' })
+      setAiForm(false)
+      load()
+    } else {
+      toast({ title: 'IA indisponível', body: r.message ?? 'Falha ao gerar', kind: 'alert' })
+    }
   }
 
   const current = cards[idx]
@@ -185,11 +206,30 @@ export default function Flashcards() {
           </div>
 
           <button
-            onClick={() => toast({ title: 'Geração com IA', body: 'A IA gerará flashcards do seu conteúdo — disponível na aba Assistente.', kind: 'info' })}
+            onClick={() => setAiForm((a) => !a)}
             className="w-full rounded-xl border border-dashed border-gold/30 text-gold/80 py-3 text-sm flex items-center justify-center gap-2 hover:border-gold/60"
           >
             <Sparkles className="w-4 h-4" /> Gerar flashcards com IA
           </button>
+
+          {aiForm && (
+            <Glass className="p-4">
+              <form onSubmit={genAI} className="space-y-2.5">
+                <select name="subject_id" className="w-full bg-black/30 rounded-lg px-3 py-2.5 text-sm border border-white/10" defaultValue={subjectFilter ?? overview?.decks[0]?.subject_id ?? 1}>
+                  {overview?.decks.map((d) => <option key={d.subject_id} value={d.subject_id}>{d.name}</option>)}
+                </select>
+                <input name="topic" placeholder="Tópico (ex: Termodinâmica) — deixe vazio para misturar" className="w-full bg-black/30 rounded-lg px-3 py-2.5 text-sm border border-white/10" />
+                <select name="qty" className="w-full bg-black/30 rounded-lg px-3 py-2.5 text-sm border border-white/10" defaultValue="8">
+                  <option value="4">4 cartas</option>
+                  <option value="8">8 cartas</option>
+                  <option value="12">12 cartas</option>
+                </select>
+                <button disabled={aiBusy} className="w-full rounded-xl bg-gold text-black font-bold py-2.5 text-sm disabled:opacity-40">
+                  {aiBusy ? 'gerando…' : 'Gerar agora'}
+                </button>
+              </form>
+            </Glass>
+          )}
         </>
       )}
     </div>

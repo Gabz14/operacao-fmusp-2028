@@ -78,6 +78,35 @@ body {
 }
 .pulse-gold { animation: pulse-gold 2.4s ease-in-out infinite; }
 
+/* ===== Temas da Loja ===== */
+html.theme-noite body {
+  background:
+    radial-gradient(1000px 500px at 85% -10%, rgba(245, 197, 24, 0.05), transparent 60%),
+    radial-gradient(800px 400px at -10% 30%, rgba(245, 197, 24, 0.02), transparent 55%),
+    #050507;
+}
+html.theme-noite .glass-strong {
+  background: linear-gradient(160deg, rgba(20, 20, 28, 0.92), rgba(8, 8, 12, 0.95));
+}
+html.theme-ouro .gold-glow {
+  box-shadow: 0 0 30px rgba(245, 197, 24, 0.45), 0 0 90px rgba(245, 197, 24, 0.15);
+}
+html.theme-ouro .glass,
+html.theme-ouro .glass-strong {
+  border-color: rgba(245, 197, 24, 0.3);
+}
+html.theme-cidade .bg-grid {
+  background-image:
+    linear-gradient(rgba(245, 197, 24, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245, 197, 24, 0.06) 1px, transparent 1px);
+}
+html.theme-portao body {
+  background:
+    radial-gradient(1200px 600px at 50% -20%, rgba(245, 197, 24, 0.09), transparent 55%),
+    radial-gradient(800px 500px at 90% 90%, rgba(88, 28, 135, 0.18), transparent 60%),
+    #07070c;
+}
+
 @keyframes float-slow {
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }

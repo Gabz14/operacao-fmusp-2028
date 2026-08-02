@@ -18,6 +18,9 @@ export default function Provas() {
   const [answers, setAnswers] = useState<Record<string, string>>({})
   const [result, setResult] = useState<ExamResult | null>(null)
   const [elapsed, setElapsed] = useState(0)
+  const [subjects, setSubjects] = useState<{ subject_id: number; name: string }[]>([])
+  const [aiForm, setAiForm] = useState(false)
+  const [aiBusy, setAiBusy] = useState(false)
   const toast = useApp((s) => s.toast)
   const refresh = useApp((s) => s.refresh)
 
@@ -27,6 +30,9 @@ export default function Provas() {
     setResults(d.results)
   }
   useEffect(() => { load() }, [])
+  useEffect(() => {
+    api.get('/api/flashcards/overview').then((o) => setSubjects((o.decks as { subject_id: number; name: string }[]) ?? []))
+  }, [])
 
   useEffect(() => {
     if (!solving) return
@@ -53,6 +59,25 @@ export default function Provas() {
     setSolving(null)
     load()
     refresh()
+  }
+
+  const genAI = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const fd = new FormData(e.currentTarget)
+    setAiBusy(true)
+    const r = await api.post<{ ok: boolean; exam_id?: number; message?: string }>('/api/ia/simulado', {
+      subject: String(fd.get('subject') ?? '').trim(),
+      qty: Number(fd.get('qty') ?? 10),
+    })
+    setAiBusy(false)
+    if (r.ok) {
+      toast({ title: 'Simulado IA criado', body: 'Já está na lista abaixo — boa sorte.', kind: 'gold' })
+      setAiForm(false)
+      load()
+      refresh()
+    } else {
+      toast({ title: 'IA indisponível', body: r.message ?? 'Falha ao gerar', kind: 'alert' })
+    }
   }
 
   return (
@@ -175,11 +200,29 @@ export default function Provas() {
       )}
 
       <button
-        onClick={() => toast({ title: 'Provas por IA', body: 'A IA monta simulados sob medida para você — use a aba Assistente (✦).', kind: 'info' })}
+        onClick={() => setAiForm((a) => !a)}
         className="w-full rounded-xl border border-dashed border-gold/30 text-gold/80 py-3 text-sm flex items-center justify-center gap-2 hover:border-gold/60"
       >
         <Sparkles className="w-4 h-4" /> Gerar simulado com IA
       </button>
+
+      {aiForm && (
+        <Glass className="p-4">
+          <form onSubmit={genAI} className="space-y-2.5">
+            <select name="subject" className="w-full bg-black/30 rounded-lg px-3 py-2.5 text-sm border border-white/10" defaultValue={subjects[0]?.name ?? 'Matemática'}>
+              {subjects.map((s) => <option key={s.subject_id} value={s.name}>{s.name}</option>)}
+            </select>
+            <select name="qty" className="w-full bg-black/30 rounded-lg px-3 py-2.5 text-sm border border-white/10" defaultValue="10">
+              <option value="5">5 questões</option>
+              <option value="10">10 questões</option>
+              <option value="15">15 questões</option>
+            </select>
+            <button disabled={aiBusy} className="w-full rounded-xl bg-gold text-black font-bold py-2.5 text-sm disabled:opacity-40">
+              {aiBusy ? 'gerando…' : 'Gerar agora'}
+            </button>
+          </form>
+        </Glass>
+      )}
     </div>
   )
 }

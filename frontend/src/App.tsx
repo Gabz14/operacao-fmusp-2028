@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { Home, CalendarDays, Timer, Layers, User } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { useEffect } from 'react'
 import { useApp } from './store'
 import { Toasts } from './components/ui'
 import CrisisOverlay from './pages/Crise'
@@ -15,7 +16,28 @@ const TABS = [
 
 export default function App() {
   const dash = useApp((s) => s.dash)
+  const refresh = useApp((s) => s.refresh)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const owned = new Set<string>(JSON.parse(localStorage.getItem('loja_owned') ?? '[]'))
+    const el = document.documentElement
+    el.classList.toggle('theme-noite', owned.has('tema_noite'))
+    el.classList.toggle('theme-ouro', owned.has('tema_ouro'))
+    el.classList.toggle('theme-cidade', owned.has('wallpaper_cidade'))
+    el.classList.toggle('theme-portao', owned.has('wallpaper_noite'))
+  }, [])
+
+  useEffect(() => {
+    const onFocus = () => refresh(true)
+    const onVis = () => { if (document.visibilityState === 'visible') refresh(true) }
+    window.addEventListener('focus', onFocus)
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      document.removeEventListener('visibilitychange', onVis)
+    }
+  }, [refresh])
 
   return (
     <div className="min-h-full relative">

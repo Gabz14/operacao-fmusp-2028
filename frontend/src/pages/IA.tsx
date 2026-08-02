@@ -22,7 +22,7 @@ export default function IA() {
   const [available, setAvailable] = useState<boolean | null>(null)
   const [showKey, setShowKey] = useState(false)
   const [key, setKey] = useState('')
-  const [extra, setExtra] = useState<{ flashcards: { subject_id: number; topic: string; qty: number }; exam: { subject: string; qty: number } } | null>(null)
+  const [extra, setExtra] = useState<{ decks: { subject_id: number; name: string }[]; flashcards: { subject_id: number; topic: string; qty: number }; exam: { subject: string; qty: number } } | null>(null)
   const endRef = useRef<HTMLDivElement>(null)
   const toast = useApp((s) => s.toast)
 
@@ -30,7 +30,7 @@ export default function IA() {
     api.get('/api/ia/status').then((r) => setAvailable(r.available))
     api.get('/api/flashcards/overview').then((o) => {
       const d = o.decks as { subject_id: number; name: string }[]
-      setExtra({ flashcards: { subject_id: d[0]?.subject_id ?? 1, topic: '', qty: 8 }, exam: { subject: d[0]?.name ?? 'Matemática', qty: 10 } })
+      setExtra({ decks: d, flashcards: { subject_id: d[0]?.subject_id ?? 1, topic: '', qty: 8 }, exam: { subject: d[0]?.name ?? 'Matemática', qty: 10 } })
     })
   }, [])
 
@@ -55,29 +55,60 @@ export default function IA() {
     setBusy(false)
   }
 
-  const runAction = async (id: string) => {
+  const parseTopic = (s: string): [string, string] => {
+    const parts = s.split(/\s*(?:—|–|-|,|:)\s*/)
+    if (parts.length >= 2) return [parts[0].trim(), parts.slice(1).join(' ').trim()]
+    return ['', s.trim()]
+  }
+
+  const runAction = async (id: string, promptOverride?: string) => {
     if (busy) return
-    if (id === 'explain') return ask(input, 'explain')
-    if (id === 'solve') return ask(input, 'solve')
-    if (id === 'exercises') return ask(input, 'exercises')
-    if (id === 'flashcards') {
-      setBusy(true)
-      const f = extra!.flashcards
-      const r = await api.post<{ ok: boolean; created?: number; message?: string }>('/api/ia/flashcards', { subject_id: f.subject_id, topic: f.topic, qty: f.qty })
-      if (r.ok) toast({ title: `+${r.created} flashcards gerados`, kind: 'gold' })
-      else setMessages((m) => [...m, { role: 'ia', text: r.message ?? 'Falha' }])
-      setBusy(false)
+    const prompt = promptOverride ?? input
+    if (!prompt.trim()) {
+      setMessages((m) => [...m, { role: 'ia', text: 'Descreva o que quer na caixa de texto (ex: "Física — Termodinâmica").' }])
       return
     }
-    if (id === 'exam') {
-      setBusy(true)
-      const e = extra!.exam
-      const r = await api.post<{ ok: boolean; exam_id?: number; message?: string }>('/api/ia/simulado', { subject: e.subject, qty: e.qty })
-      if (r.ok) toast({ title: 'Simulado criado', body: 'Vá em Provas para resolver.', kind: 'gold' })
-      else setMessages((m) => [...m, { role: 'ia', text: r.message ?? 'Falha' }])
-      setBusy(false)
-      return
+    setMessages((m) => [...m, { role: 'user', text: prompt }])
+    setInput('')
+    setBusy(true)
+    try {
+      if (id === 'explain') {
+        const [subject, topic] = parseTopic(prompt)
+        const r = await api.post<{ ok: boolean; text?: string; message?: string }>('/api/ia/explicar', { subject, topic })
+        setMessages((m) => [...m, { role: 'ia', text: r.ok ? r.text! : (r.message ?? 'Falha'), kind: 'explain' }])
+        if (!r.ok && (r.message ?? '').includes('chave')) setShowKey(true)
+      } else if (id === 'solve') {
+        const r = await api.post<{ ok: boolean; text?: string; message?: string }>('/api/ia/resolver', { question: prompt })
+        setMessages((m) => [...m, { role: 'ia', text: r.ok ? r.text! : (r.message ?? 'Falha'), kind: 'solve' }])
+        if (!r.ok && (r.message ?? '').includes('chave')) setShowKey(true)
+      } else if (id === 'exercises') {
+        const [subject, topic] = parseTopic(prompt)
+        const r = await api.post<{ ok: boolean; text?: string; message?: string }>('/api/ia/exercicios', { subject, topic, qty: 5 })
+        setMessages((m) => [...m, { role: 'ia', text: r.ok ? r.text! : (r.message ?? 'Falha'), kind: 'exercises' }])
+        if (!r.ok && (r.message ?? '').includes('chave')) setShowKey(true)
+      } else if (id === 'flashcards') {
+        const f = extra!.flashcards
+        const [byName, topic] = parseTopic(prompt)
+        let subject_id = f.subject_id
+        if (byName) {
+          const match = extra!.decks.find((d) => d.name.toLowerCase().includes(byName.toLowerCase()))
+          if (match) subject_id = match.subject_id
+        }
+        const r = await api.post<{ ok: boolean; created?: number; message?: string }>('/api/ia/flashcards', { subject_id, topic: topic || f.topic, qty: f.qty })
+        if (r.ok) toast({ title: `+${r.created} flashcards gerados`, kind: 'gold' })
+        else setMessages((m) => [...m, { role: 'ia', text: r.message ?? 'Falha' }])
+        if (!r.ok && (r.message ?? '').includes('chave')) setShowKey(true)
+      } else if (id === 'exam') {
+        const e = extra!.exam
+        const r = await api.post<{ ok: boolean; exam_id?: number; message?: string }>('/api/ia/simulado', { subject: e.subject, qty: e.qty })
+        if (r.ok) toast({ title: 'Simulado criado', body: 'Vá em Provas para resolver.', kind: 'gold' })
+        else setMessages((m) => [...m, { role: 'ia', text: r.message ?? 'Falha' }])
+        if (!r.ok && (r.message ?? '').includes('chave')) setShowKey(true)
+      }
+    } catch (e) {
+      setMessages((m) => [...m, { role: 'ia', text: String(e).slice(0, 300) }])
     }
+    setBusy(false)
   }
 
   const saveKey = async () => {
@@ -171,7 +202,7 @@ export default function IA() {
         </div>
 
         <div className="mt-3">
-          <button onClick={() => runAction(ACTIONS.find((a) => a.id === 'flashcards')!.id)} className="w-full text-[11px] text-gold/80 border border-dashed border-gold/25 rounded-lg py-2 mb-2 hover:border-gold/50">
+          <button onClick={() => runAction('flashcards', extra?.decks.find((d) => d.subject_id === extra.flashcards.subject_id)?.name ?? 'Matemática')} className="w-full text-[11px] text-gold/80 border border-dashed border-gold/25 rounded-lg py-2 mb-2 hover:border-gold/50">
             ⚡ atalho: gerar flashcards do tópico da semana
           </button>
           <div className="flex items-center gap-2">

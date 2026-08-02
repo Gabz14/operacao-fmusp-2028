@@ -50,7 +50,7 @@ interface AppState {
   dash: DashboardData | null
   loading: boolean
   toasts: Toast[]
-  refresh: () => Promise<void>
+  refresh: (silent?: boolean) => Promise<void>
   toast: (t: Omit<Toast, 'id'>) => void
   dismissToast: (id: number) => void
 }
@@ -61,13 +61,13 @@ export const useApp = create<AppState>((set, get) => ({
   dash: null,
   loading: true,
   toasts: [],
-  refresh: async () => {
+  refresh: async (silent = false) => {
     try {
       const dash = await api.get<DashboardData>('/api/dashboard')
       set({ dash, loading: false })
     } catch (e) {
       set({ loading: false })
-      get().toast({ title: 'Falha na conexão', body: String(e).slice(0, 120), kind: 'alert' })
+      if (!silent) get().toast({ title: 'Falha na conexão', body: String(e).slice(0, 120), kind: 'alert' })
     }
   },
   toast: (t) => {
